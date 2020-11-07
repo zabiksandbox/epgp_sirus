@@ -137,8 +137,13 @@ function EPGP:ProcessCommand(str)
       "   ep <name> <reason> <amount> - "..L["Award EP"],
       "   gp <name> <itemlink> [<amount>] - "..L["Credit GP"],
       "   decay - "..L["Decay of EP/GP by %d%%"]:format(EPGP:GetDecayPercent()),
+      "   start/stop - start and stop raid EP counter",
     }
     EPGP:Print(table.concat(help, "\n"))
+  elseif command == "start" then
+    self:StartRaid()
+  elseif command == "show" then
+    self:ShowRaid()
   else
     EPGP:ToggleUI()
   end

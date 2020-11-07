@@ -183,6 +183,9 @@ local standings = {}
 local selected = {}
 selected._count = 0  -- This is safe since _ is not allowed in names
 
+EPGP.epcounter = 0;
+EPGP.gpcounter = 0;
+
 local function DecodeNote(note)
   if note then
     if note == "" then
@@ -733,11 +736,8 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
 
   local ep, gp, main = self:GetEPGP(name)
 
-  local awarded = {}
-  local extras_awarded = {}
-  local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
-  local extras_reason = reason .. " - " .. L["Standby"]
-  local counter = 0
+  --local awarded = {}
+  --local counter = 0
 
   if not ep then
     self:Print(L["Ignoring GP change for unknown member %s"]:format(name))
@@ -745,34 +745,45 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
   end
 
   if reason ~= "fail" then
-    _, amount = AddEPGP(main or name, (amount / 10), amount)
+    _, amount = AddEPGP(main or name, (amount / global_config.soc_rate), amount)
+    --_, amount = AddEPGP(main or name, 0, amount)
   else
     _, amount = AddEPGP(main or name, 0, amount)
   end
+
+  EPGP.epcounter = EPGP.epcounter + (amount / global_config.soc_rate)
+  EPGP.gpcounter = EPGP.gpcounter + amount
 
   if amount then
     callbacks:Fire("GPAward", name, reason, amount, mass, undo)
 
     if  global_config.soc_rate > 0 then
       if reason ~= "fail" then
-        for i=1,EPGP:GetNumMembers() do
-          local playername = EPGP:GetMember(i)
-          local playerep, playergp, playermain = self:GetEPGP(playername)
+        if UnitInRaid(name) then
+          EPGP:IncRaidEPBy(reason, (amount / global_config.soc_rate));
+        end
+
+        --for i=1,EPGP:GetNumMembers() do
+        --  local playername = EPGP:GetMember(i)
+        --  local playerep, playergp, playermain = self:GetEPGP(playername)
 
           
-          if main ~= playermain then
-             if name ~= playername then
-                if UnitInRaid(playername) then
-                  AddEPGP(playermain or playername, (amount / global_config.soc_rate) , 0)
-                  callbacks:Fire("EPAward", playermain or playername, reason, (amount / 10), false)
-                end
-             end
-          end
-        end
+        --  if main ~= playermain then
+        --     if name ~= playername then
+        --        if UnitInRaid(playername) then
+        --          awarded[EPGP:IncEPBy(playermain or playername, reason, (amount / global_config.soc_rate), true)] = true
+                  --AddEPGP(playermain or playername, (amount / global_config.soc_rate) , 0)
+                  --awarded[playermain or playername] = true
+                  --callbacks:Fire("EPAward", playermain or playername, reason, (amount / global_config.soc_rate), false)
+        --        end
+        --     end
+        --  end
+        --end
       end
     end
-
-
+    --if next(awarded) then
+    --  callbacks:Fire("MassEPAward", awarded, reason, (amount / global_config.soc_rate))
+    --end
   end
   return main or name
 end
@@ -835,7 +846,7 @@ function EPGP:IncMassEPBy(reason, amount)
   local awarded = {}
   local extras_awarded = {}
   local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
-  local extras_reason = reason .. " - " .. L["Standby"]
+  local extras_reason = reason
 
   for i=1,EPGP:GetNumMembers() do
     local name = EPGP:GetMember(i)
@@ -853,6 +864,44 @@ function EPGP:IncMassEPBy(reason, amount)
           extras_awarded[EPGP:IncEPBy(name, extras_reason,
                                       extras_amount, true)] = true
         else
+          awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
+        end
+      end
+    end
+  end
+  if next(awarded) then
+    if next(extras_awarded) then
+      callbacks:Fire("MassEPAward", awarded, reason, amount,
+                     extras_awarded, extras_reason, extras_amount)
+    else
+      callbacks:Fire("MassEPAward", awarded, reason, amount)
+    end
+  end
+end
+
+function EPGP:IncRaidEPBy(reason, amount)
+  local awarded = {}
+  local extras_awarded = {}
+  local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
+  local extras_reason = reason
+
+  for i=1,EPGP:GetNumMembersInAwardList() do
+    local name = EPGP:GetMember(i)
+    if UnitInRaid(name) then
+      -- EPGP:GetMain() will return the input name if it doesn't find a main,
+      -- so we can't use it to validate that this actually is a character who
+      -- can recieve EP.
+      --
+      -- EPGP:GetEPGP() returns nil for ep and gp, if it can't find a
+      -- valid member based on the name however.
+      local ep, gp, main = EPGP:GetEPGP(name)
+      local main = main or name
+      if ep and not awarded[main] and not extras_awarded[main] then
+        if EPGP:IsMemberInExtrasList(name) then
+          extras_awarded[EPGP:IncEPBy(name, extras_reason,
+                                      extras_amount, true)] = true
+        end
+        if EPGP:IsMemberInAwardList(name) then
           awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
         end
       end
@@ -983,6 +1032,21 @@ function EPGP:GUILD_ROSTER_UPDATE()
       end
     end
   end
+end
+
+function EPGP:StartRaid()
+  EPGP.epcounter = 0
+  EPGP.gpcounter = 0
+  print("EPGP counter = 0");
+end
+
+function EPGP:ShowRaid()
+  message(
+    "RAID counters\n"..
+    "EP: "..EPGP.epcounter.."\n"..
+    "GP: "..EPGP.gpcounter.."\n"
+
+    )
 end
 
 function EPGP:OnEnable()

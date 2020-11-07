@@ -14,14 +14,14 @@ function OnTooltipSetItem(tooltip, ...)
         L["GP Main: %d or %d"]:format(gp1, gp2), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
       )
       tooltip:AddLine(
-        L["GP Off: %d or %d"]:format(gp1 * 0.75, gp2 * 0.75), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
+        L["GP Off: %d or %d"]:format(gp1 * 0.5, gp2 * 0.5), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
       )
     else
       tooltip:AddLine(
         L["GP Main: %d"]:format(gp1), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
       )
       tooltip:AddLine(
-        L["GP Off: %d"]:format(gp1 * 0.75), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
+        L["GP Off: %d"]:format(gp1 * 0.5), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
       )
     end
   end
