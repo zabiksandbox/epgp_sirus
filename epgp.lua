@@ -744,11 +744,18 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
     return
   end
 
-  if reason ~= "fail" then
-    _, amount = AddEPGP(main or name, (amount / global_config.soc_rate), amount)
-    --_, amount = AddEPGP(main or name, 0, amount)
-  else
-    _, amount = AddEPGP(main or name, 0, amount)
+  if  global_config.soc_rate > 0 then
+    if reason ~= "fail" then
+      if UnitInRaid(name) then
+        _, amount = AddEPGP(main or name, (amount / global_config.soc_rate), amount)
+      else
+        _, amount = AddEPGP(main or name, 0, amount)  -- не в рейде за шмот
+      end 
+    else
+      _, amount = AddEPGP(main or name, 0, amount) -- фейл
+    end
+  else 
+    _, amount = AddEPGP(main or name, 0, amount) --дефолт
   end
 
   EPGP.epcounter = EPGP.epcounter + (amount / global_config.soc_rate)
