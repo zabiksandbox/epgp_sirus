@@ -754,8 +754,8 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
   local guildcount = EPGP:GetGuildInRaid()
   local multiplier = (guildcount / 100)
 
-  if multiplier < 0.1 then
-    multiplier = 0.1
+  if multiplier < (global_config.soc_rate / 100) then
+    multiplier = (global_config.soc_rate / 100)
   end
 
   local epamount = amount * multiplier
@@ -1054,6 +1054,9 @@ function EPGP:ShowRaid()
   local guildcount = EPGP:GetGuildInRaid()
   local multiplier = (guildcount / 100)
 
+  if multiplier < (global_config.soc_rate / 100) then
+    multiplier = (global_config.soc_rate / 100)
+  end
   
   message(
     "EP: "..EPGP.epcounter.."\n"..
