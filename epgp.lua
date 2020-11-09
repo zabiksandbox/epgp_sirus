@@ -598,6 +598,21 @@ function EPGP:GetNumMembersInAwardList()
   end
 end
 
+function EPGP:GetGuildInRaid()
+  local guildcount = 0
+
+  for i=1,EPGP:GetNumMembersInAwardList() do
+    local name = EPGP:GetMember(i)
+    if UnitInRaid(name) then
+      if EPGP:IsMemberInAwardList(name) then
+          guildcount = guildcount + 1
+      end
+    end
+  end
+
+  return guildcount
+end
+
 function EPGP:IsMemberInAwardList(name)
   if UnitInRaid("player") then
     -- If we are in raid the member is in the award list if it is in
@@ -736,8 +751,15 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
 
   local ep, gp, main = self:GetEPGP(name)
 
-  --local awarded = {}
-  --local counter = 0
+  local guildcount = EPGP:GetGuildInRaid()
+  local multiplier = (guildcount / 100)
+
+  if multiplier < 0.1 then
+    multiplier = 0.1
+  end
+
+  local epamount = amount * multiplier
+
 
   if not ep then
     self:Print(L["Ignoring GP change for unknown member %s"]:format(name))
@@ -747,7 +769,7 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
   if  global_config.soc_rate > 0 then
     if reason ~= "fail" then
       if UnitInRaid(name) then
-        _, amount = AddEPGP(main or name, (amount / global_config.soc_rate), amount)
+        _, amount = AddEPGP(main or name, epamount, amount)
       else
         _, amount = AddEPGP(main or name, 0, amount)  -- не в рейде за шмот
       end 
@@ -758,7 +780,7 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
     _, amount = AddEPGP(main or name, 0, amount) --дефолт
   end
 
-  EPGP.epcounter = EPGP.epcounter + (amount / global_config.soc_rate)
+  EPGP.epcounter = EPGP.epcounter + epamount
   EPGP.gpcounter = EPGP.gpcounter + amount
 
   if amount then
@@ -767,30 +789,10 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
     if  global_config.soc_rate > 0 then
       if reason ~= "fail" then
         if UnitInRaid(name) then
-          EPGP:IncRaidEPBy(reason, (amount / global_config.soc_rate));
+          EPGP:IncRaidEPBy(reason, epamount);
         end
-
-        --for i=1,EPGP:GetNumMembers() do
-        --  local playername = EPGP:GetMember(i)
-        --  local playerep, playergp, playermain = self:GetEPGP(playername)
-
-          
-        --  if main ~= playermain then
-        --     if name ~= playername then
-        --        if UnitInRaid(playername) then
-        --          awarded[EPGP:IncEPBy(playermain or playername, reason, (amount / global_config.soc_rate), true)] = true
-                  --AddEPGP(playermain or playername, (amount / global_config.soc_rate) , 0)
-                  --awarded[playermain or playername] = true
-                  --callbacks:Fire("EPAward", playermain or playername, reason, (amount / global_config.soc_rate), false)
-        --        end
-        --     end
-        --  end
-        --end
       end
     end
-    --if next(awarded) then
-    --  callbacks:Fire("MassEPAward", awarded, reason, (amount / global_config.soc_rate))
-    --end
   end
   return main or name
 end
@@ -1048,12 +1050,19 @@ function EPGP:StartRaid()
 end
 
 function EPGP:ShowRaid()
-  message(
-    "RAID counters\n"..
-    "EP: "..EPGP.epcounter.."\n"..
-    "GP: "..EPGP.gpcounter.."\n"
 
+  local guildcount = EPGP:GetGuildInRaid()
+  local multiplier = (guildcount / 100)
+
+  
+  message(
+    "EP: "..EPGP.epcounter.."\n"..
+    "GP: "..EPGP.gpcounter.."\n"..
+    "Units: "..guildcount.."\n"..
+    "Multiplier: "..multiplier.."\n"
     )
+
+  print("EP: "..EPGP.epcounter.."\nGP: "..EPGP.gpcounter.."\nUnits: "..guildcount.."\nMultiplier: "..multiplier.."\n")
 end
 
 function EPGP:OnEnable()
