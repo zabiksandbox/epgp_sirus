@@ -60,7 +60,6 @@ L["Loot tracking threshold"] = "\230\142\137\232\144\189\231\137\169\229\147\129
 -- L["Make sure you are the only person changing EP and GP. If you have multiple people changing EP and GP at the same time, for example one awarding EP and another crediting GP, you *are* going to have data loss."] = ""
 L["Mass EP Award"] = "\230\149\180\233\171\148EP\231\141\142\229\139\181"
 L["Min EP should be a positive number"] = "\230\156\128\229\176\143EP\229\128\188\229\191\133\233\160\136\231\130\186\230\173\163\230\149\184"
-L["Max EP should be a positive number"] = "\230\156\128\229\176\143EP\229\128\188\229\191\133\233\160\136\231\130\186\230\173\163\230\149\184"
 L["Next award in "] = "\228\184\139\228\184\128\229\128\139\231\141\142\229\139\181"
 L["Only display GP values for items at or above this quality."] = "\229\143\170\233\161\175\231\164\186\229\147\129\232\179\170\229\144\140\231\173\137\230\136\150\228\187\165\228\184\138\228\185\139\231\137\169\229\147\129\231\154\132GP\229\128\188"
 L["Other"] = "\229\133\182\228\187\150"

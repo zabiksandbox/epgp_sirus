@@ -589,20 +589,6 @@ local function EPGPSideFrameGPDropDown_Initialize(dropDown)
                 end
     UIDropDownMenu_AddButton(info)
   end
-
-
-  local info = UIDropDownMenu_CreateInfo()
-  info.text = "fail"
-  info.arg1 = "fail"
-  info.func = function(self, arg1)
-        UIDropDownMenu_SetSelectedID(dropDown, self:GetID())
-        parent.editBox:SetText("50")
-        parent.editBox:SetFocus()
-        parent.editBox:HighlightText()
-  end
-  UIDropDownMenu_AddButton(info)
-
-
 end
 
 local function AddGPControls(frame)

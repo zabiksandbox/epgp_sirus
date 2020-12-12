@@ -35,7 +35,7 @@ local EQUIPSLOT_MULTIPLIER_1 = {
   INVTYPE_THROWN = 0.5,
   INVTYPE_RELIC = 0.5,
   -- Hack for Tier 9 25M heroic tokens.
-  INVTYPE_CUSTOM_MULTISLOT_TIER = 1,
+  INVTYPE_CUSTOM_MULTISLOT_TIER = 0.9,
 }
 
 -- This is the low price equipslot multiplier (off hand weapons, non
@@ -51,21 +51,21 @@ local EQUIPSLOT_MULTIPLIER_2 = {
 --Used to display GP values directly on tier tokens
 local CUSTOM_ITEM_DATA = {
   -- Tier 4
-  [29753] = { 4, 260, "INVTYPE_CHEST" },
-  [29754] = { 4, 260, "INVTYPE_CHEST" },
-  [29755] = { 4, 260, "INVTYPE_CHEST" },
-  [29756] = { 4, 260, "INVTYPE_HAND" },
-  [29757] = { 4, 260, "INVTYPE_HAND" },
-  [29758] = { 4, 260, "INVTYPE_HAND" },
-  [29759] = { 4, 260, "INVTYPE_HEAD" },
-  [29760] = { 4, 260, "INVTYPE_HEAD" },
-  [29761] = { 4, 260, "INVTYPE_HEAD" },
-  [29762] = { 4, 260, "INVTYPE_SHOULDER" },
-  [29763] = { 4, 260, "INVTYPE_SHOULDER" },
-  [29764] = { 4, 260, "INVTYPE_SHOULDER" },
-  [29765] = { 4, 260, "INVTYPE_LEGS" },
-  [29766] = { 4, 260, "INVTYPE_LEGS" },
-  [29767] = { 4, 260, "INVTYPE_LEGS" },
+  [29753] = { 4, 120, "INVTYPE_CHEST" },
+  [29754] = { 4, 120, "INVTYPE_CHEST" },
+  [29755] = { 4, 120, "INVTYPE_CHEST" },
+  [29756] = { 4, 120, "INVTYPE_HAND" },
+  [29757] = { 4, 120, "INVTYPE_HAND" },
+  [29758] = { 4, 120, "INVTYPE_HAND" },
+  [29759] = { 4, 120, "INVTYPE_HEAD" },
+  [29760] = { 4, 120, "INVTYPE_HEAD" },
+  [29761] = { 4, 120, "INVTYPE_HEAD" },
+  [29762] = { 4, 120, "INVTYPE_SHOULDER" },
+  [29763] = { 4, 120, "INVTYPE_SHOULDER" },
+  [29764] = { 4, 120, "INVTYPE_SHOULDER" },
+  [29765] = { 4, 120, "INVTYPE_LEGS" },
+  [29766] = { 4, 120, "INVTYPE_LEGS" },
+  [29767] = { 4, 120, "INVTYPE_LEGS" },
 
   -- Tier 5
   [30236] = { 4, 133, "INVTYPE_CHEST" },
@@ -214,7 +214,7 @@ local CUSTOM_ITEM_DATA = {
   [46053] = { 4, 239, "INVTYPE_RING" },
 
   -- T9.245 (10M heroic/25M)
-  [47242] = { 4, 255, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [47242] = { 4, 245, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
 
   -- T9.258 (25M heroic)
   [47557] = { 4, 258, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
@@ -222,16 +222,14 @@ local CUSTOM_ITEM_DATA = {
   [47559] = { 4, 258, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
 
   -- T10.264 (10M heroic/25M)
-  [52025] = { 4, 260, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
-  [52026] = { 4, 260, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
-  [52027] = { 4, 260, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [52025] = { 4, 264, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [52026] = { 4, 264, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [52027] = { 4, 264, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
 
   -- T10.279 (25M heroic)
-  [52028] = { 4, 260, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
-  [52029] = { 4, 260, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
-  [52030] = { 4, 260, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
-
-  [280005] = { 4, 275, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [52028] = { 4, 279, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [52029] = { 4, 279, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
+  [52030] = { 4, 279, "INVTYPE_CUSTOM_MULTISLOT_TIER" },
 }
 
 -- The default quality threshold:
@@ -313,7 +311,6 @@ function lib:GetValue(item)
   if not slot_multiplier1 then
     return nil, nil, level, rarity, equipLoc
   end
-  --local gp_base = 0.483 * 2 ^ (level/26 + (rarity - 4))
   local gp_base = 0.483 * 2 ^ (level/26 + (rarity - 4))
   local high = math.floor(gp_base * slot_multiplier1)
   local low = slot_multiplier2 and math.floor(gp_base * slot_multiplier2) or nil

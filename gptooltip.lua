@@ -6,26 +6,18 @@ local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 function OnTooltipSetItem(tooltip, ...)
   local _, itemlink = tooltip:GetItem()
   local gp1, gp2, ilvl = GP:GetValue(itemlink)
-  local itemID = itemlink:match("item:(%d+)")
 
   if gp1 then
     if gp2 then
       tooltip:AddLine(
-        L["GP Main: %d or %d"]:format(gp1, gp2), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
-      )
-      tooltip:AddLine(
-        L["GP Off: %d or %d"]:format(gp1 * 0.5, gp2 * 0.5), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
-      )
+        L["GP: %d or %d"]:format(gp1, gp2),
+        NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
     else
       tooltip:AddLine(
-        L["GP Main: %d"]:format(gp1), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
-      )
-      tooltip:AddLine(
-        L["GP Off: %d"]:format(gp1 * 0.5), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b
-      )
+        L["GP: %d"]:format(gp1),
+        NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
     end
   end
-  tooltip:AddLine(L["Item ID: %d"]:format(itemID), NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b)
 end
 
 mod.dbDefaults = {
