@@ -146,8 +146,22 @@ function EPGP:ProcessCommand(str)
   elseif command == "stop" then
     local amount = self:GetArgs(str, 1, nextpos)
     self:SubmitExtras(amount)
+  elseif command == "add" then
+    local name = self:GetArgs(str, 1, nextpos)
+    self:SelectMember(name);
+  elseif command == "remove" then
+    local name = self:GetArgs(str, 1, nextpos)
+    self:DeSelectMember(name);
   elseif command == "show" then
     self:ShowRaid()
+  elseif command == "test" then
+    local name = self:GetArgs(str, 1, nextpos)
+    self:DeSelectMember(name);
+    if UnitIsConnected(name) then 
+      print("Online");
+    else 
+      print("Offline");
+    end
   else
     EPGP:ToggleUI()
   end

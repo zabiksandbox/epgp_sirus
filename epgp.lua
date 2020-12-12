@@ -157,6 +157,11 @@ local modulePrototype = {
                  self.db.profile.epcounter = 0
                  self.db.profile.extraepcounter = 0
                  self.db.profile.gpcounter = 0
+                 self.db.profile.standbyList = {} -- список "в ожидании".
+                 self.db.profile.selected = {}
+                 self.db.profile.selectedcount = 0
+                 self.db.profile.raidStartEP = 0 -- стартовые ЕП реейда.
+                 self.db.profile.standings = {}
                end,
   GetDBVar = function (self, i) return self.db.profile[i[#i]] end,
   SetDBVar = function (self, i, v) self.db.profile[i[#i]] = v end,
@@ -182,9 +187,6 @@ local main_data = {}
 local alt_data = {}
 local ignored = {}
 local db
-local standings = {}
-local selected = {}
-selected._count = 0  -- This is safe since _ is not allowed in names
 
 local function DecodeNote(note)
   if note then
@@ -239,8 +241,8 @@ local function ComparatorWrapper(f)
              return not b_in_raid
            end
 
-           local a_selected = selected[a]
-           local b_selected = selected[b]
+           local a_selected = db.profile.selected[a]
+           local b_selected = db.profile.selected[b]
 
            if a_selected ~= b_selected then
              return not b_selected
@@ -285,7 +287,7 @@ for k,f in pairs(comparators) do
 end
 
 local function DestroyStandings()
-  wipe(standings)
+  db.profile.standings = {}
   callbacks:Fire("StandingsChanged")
 end
 
@@ -298,24 +300,24 @@ local function RefreshStandings(order, showEveryone)
     ---  showEveryone = false: show all in raid (including alts) and
     ---  all selected members
     for n in pairs(ep_data) do
-      if showEveryone or UnitInRaid(n) or selected[n] then
-        table.insert(standings, n)
+      if showEveryone or UnitInRaid(n) or db.profile.selected[n] then
+        table.insert(db.profile.standings, n)
       end
     end
     for n in pairs(main_data) do
-      if UnitInRaid(n) or selected[n] then
-        table.insert(standings, n)
+      if UnitInRaid(n) or db.profile.selected[n] then
+        table.insert(db.profile.standings, n)
       end
     end
   else
     -- If we are not in raid, show all mains
     for n in pairs(ep_data) do
-      table.insert(standings, n)
+      table.insert(db.profile.standings, n)
     end
   end
 
   -- Sort
-  table.sort(standings, comparators[order])
+  table.sort(db.profile.standings, comparators[order])
 end
 
 -- Parse options. Options are inside GuildInfo and are inside a -EPGP-
@@ -537,19 +539,19 @@ function EPGP:StandingsShowEveryone(val)
 end
 
 function EPGP:GetNumMembers()
-  if #standings == 0 then
+  if #db.profile.standings == 0 then
     RefreshStandings(db.profile.sort_order, db.profile.show_everyone)
   end
 
-  return #standings
+  return #db.profile.standings
 end
 
 function EPGP:GetMember(i)
-  if #standings == 0 then
+  if #db.profile.standings == 0 then
     RefreshStandings(db.profile.sort_order, db.profile.show_everyone)
   end
 
-  return standings[i]
+  return db.profile.standings[i]
 end
 
 function EPGP:GetNumAlts(name)
@@ -571,9 +573,10 @@ function EPGP:SelectMember(name)
     if UnitInRaid(name) then
       return false
     end
+    db.profile.standbyList[name] = db.profile.raidStartEP
   end
-  selected[name] = true
-  selected._count = selected._count + 1
+  db.profile.selected[name] = true
+  db.profile.selectedcount = db.profile.selectedcount + 1
   DestroyStandings()
   return true
 end
@@ -585,23 +588,25 @@ function EPGP:DeSelectMember(name)
       return false
     end
   end
-  if not selected[name] then
+  if not db.profile.selected[name] then
     return false
   end
-  selected[name] = nil
-  selected._count = selected._count - 1
+  db.profile.standbyList[name] = nil
+  db.profile.selected[name] = nil
+  db.profile.selected[name] = nil
+  db.profile.selectedcount = db.profile.selectedcount - 1
   DestroyStandings()
   return true
 end
 
 function EPGP:GetNumMembersInAwardList()
   if UnitInRaid("player") then
-    return GetNumRaidMembers() + selected._count
+    return GetNumRaidMembers() + db.profile.selectedcount
   else
-    if selected._count == 0 then
+    if db.profile.selectedcount == 0 then
       return self:GetNumMembers()
     else
-      return selected._count
+      return db.profile.selectedcount
     end
   end
 end
@@ -625,23 +630,23 @@ function EPGP:IsMemberInAwardList(name)
   if UnitInRaid("player") then
     -- If we are in raid the member is in the award list if it is in
     -- the raid or the selected list.
-    return UnitInRaid(name) or selected[name]
+    return UnitInRaid(name) or db.profile.selected[name]
   else
     -- If we are not in raid and there is noone selected everyone will
     -- get an award.
-    if selected._count == 0 then
+    if db.profile.selectedcount == 0 then
       return true
     end
-    return selected[name]
+    return db.profile.selected[name]
   end
 end
 
 function EPGP:IsMemberInExtrasList(name)
-  return UnitInRaid("player") and selected[name]
+  return UnitInRaid("player") and db.profile.selected[name]
 end
 
 function EPGP:IsAnyMemberInExtrasList()
-  return selected._count ~= 0
+  return db.profile.selectedcount ~= 0
 end
 
 function EPGP:ResetEPGP()
@@ -719,6 +724,8 @@ end
 function EPGP:IncEPBy(name, reason, amount, mass, undo)
   -- When we do mass EP or decay we know what we are doing even though
   -- CanIncEPBy returns false
+  amount = amount * 1 --фиксим дефолдтные баги. хуй кто заметил его ранее.
+
   assert(EPGP:CanIncEPBy(reason, amount) or mass or undo)
   assert(type(name) == "string")
 
@@ -736,6 +743,8 @@ function EPGP:IncEPBy(name, reason, amount, mass, undo)
 end
 
 function EPGP:CanIncGPBy(reason, amount)
+  amount = amounts * 1 --фиксим дефолдтные баги. хуй кто заметил его ранее.
+
   if not CanEditOfficerNote() or not GS:IsCurrentState() then
     return false
   end
@@ -870,7 +879,6 @@ function EPGP:IncMassEPBy(reason, amount)
   local extras_reason = reason
 
   db.profile.epcounter = db.profile.epcounter + amount
-  db.profile.extraepcounter = db.profile.extraepcounter + extras_amount
 
   for i=1,EPGP:GetNumMembers() do
     local name = EPGP:GetMember(i)
@@ -903,12 +911,49 @@ function EPGP:IncMassEPBy(reason, amount)
   end
 end
 
+function EPGP:IncMassEPByAndStandings(amount)
+  local reason = "RO"
+  local awarded = {}
+  local extras_awarded = {}
+  local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
+  local extras_reason = "Standing is over"
+
+  db.profile.epcounter = db.profile.epcounter + amount
+
+  for i=1,EPGP:GetNumMembers() do
+    local name = EPGP:GetMember(i)
+    if EPGP:IsMemberInAwardList(name) then
+      local ep, gp, main = EPGP:GetEPGP(name)
+      local main = main or name
+      if ep and not awarded[main] and not extras_awarded[main] then
+
+        if UnitIsConnected(name) then -- только если поц в онлайне
+          if EPGP:IsMemberInExtrasList(name) then
+            extras_amount = extras_amount + db.profile.standbyList[name] -- выдаем за РО + старые значения
+            extras_awarded[EPGP:IncEPBy(name, extras_reason, extras_amount, true)] = true
+          else
+            awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
+          end
+        end
+
+      end
+    end
+  end
+  if next(awarded) then
+    if next(extras_awarded) then
+      callbacks:Fire("MassEPAward", awarded, reason, amount,
+                     extras_awarded, extras_reason, extras_amount)
+    else
+      callbacks:Fire("MassEPAward", awarded, reason, amount)
+    end
+  end
+end
+
 function EPGP:IncRaidEPBy(reason, amount)
   local awarded = {}
   local extras_amount = math.floor(global_config.extras_l * 0.01 * amount)
 
   db.profile.epcounter = db.profile.epcounter + amount
-  db.profile.extraepcounter = db.profile.extraepcounter + extras_amount
 
   for i=1,EPGP:GetNumMembersInAwardList() do
     local name = EPGP:GetMember(i)
@@ -922,7 +967,12 @@ function EPGP:IncRaidEPBy(reason, amount)
       local ep, gp, main = EPGP:GetEPGP(name)
       local main = main or name
       if ep and not awarded[main] then
-        if EPGP:IsMemberInAwardList(name) then
+        if EPGP:IsMemberInExtrasList(name) then
+          if db.profile.standbyList[name] == nil then -- первый разлут или ноывй ожидающий - обнуляем.
+            db.profile.standbyList[name] = 0;
+          end
+          db.profile.standbyList[name] = db.profile.standbyList[name] + extras_amount; -- при разлуте, запоминаем ЕП каждому кто в ожидании
+        else
           awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
         end
       end
@@ -952,6 +1002,13 @@ function EPGP:OnInitialize()
       show_everyone = false,
       sort_order = "PR",
       recurring_ep_period_mins = 15,
+      epcounter = 0,
+      extraepcounter = 0,
+      gpcounter = 0,
+      raidStartEP = 0,
+      standbyList = {},
+      selected = {},
+      selectedcount = 0
     }
   }
   db:RegisterDefaults(defaults)
@@ -991,28 +1048,33 @@ function EPGP:OnInitialize()
 end
 
 function EPGP:RAID_ROSTER_UPDATE()
-  local extras_amount = db.profile.extraepcounter
-  local extras_reason = 'standby';
+  local extras_reason = "Standby is over";
+  local extras_amount = 0
 
   if UnitInRaid("player") then
     -- If we are in a raid, make sure no member of the raid is
     -- selected
-    for name,_ in pairs(selected) do
+    for name,_ in pairs(db.profile.selected) do
       if UnitInRaid(name) then
-
         -- По идее, этот кусок вызовится, когда юзер переходит из листа ожидающий в рейд, т.е. при инвайте.
         -- Следовательно, здесь мы должны выдать ему все еп за ожидание, и удалить из листа. Далее он будет получать еп после каждого разлута как обычный юзверь.
-        EPGP:IncEPBy(name, extras_reason, extras_amount)
+        if db.profile.standbyList[name] == nil then 
+          db.profile.standbyList[name] = 0
+        end
 
-        selected[name] = nil
-        selected._count = selected._count - 1
+        extras_amount = db.profile.standbyList[name]
+        db.profile.standbyList[name] = 0 --обнулили в листе ожидания. фикс повторного оиждания за 1 рейд. ушел / пришел / ушел / пришел.
+        db.profile.selected[name] = nil
+        db.profile.selectedcount = db.profile.selectedcount - 1
+        EPGP:IncEPBy(name, extras_reason, extras_amount) -- выдали чуваку его накопленый ЕП за ожидание zab
+
       end
     end
   else
     -- If we are not in a raid, this means we just left so remove
     -- everyone from the selected list.
-    wipe(selected)
-    selected._count = 0
+    db.profile.selected = {}
+    db.profile.selectedcount = 0
     -- We also need to stop any recurring EP since they should stop
     -- once a raid stops.
     if self:RunningRecurringEP() then
@@ -1061,8 +1123,8 @@ end
 function EPGP:StartRaid(amount)
 
   db.profile.epcounter = 0
-  db.profile.extraepcounter = 0
   db.profile.gpcounter = 0
+  db.profile.raidStartEP = amount
   if amount ~= nil then
     if UnitInRaid("player") then 
       EPGP:IncMassEPBy("Start RT", amount)
@@ -1074,43 +1136,22 @@ end
 
 
 function EPGP:SubmitExtras(amount)
-
-  if amount ~= nil then
-    if UnitInRaid("player") then 
-      EPGP:IncMassEPBy("RO", amount)
-    end
+  if amount == nil then
+    amount = 0 
   end
 
-  local extras_awarded = {}
-  local extras_amount = db.profile.extraepcounter
-  local extras_reason = 'standby';
-
-  local awarded = {};
-  local amount = db.profile.epcounter
-  local reason = 'standby';
-  
-
-  for i=1,EPGP:GetNumMembersInAwardList() do
-    local name = EPGP:GetMember(i)
-    if UnitInRaid(name) then
-      local ep, gp, main = EPGP:GetEPGP(name)
-      local main = main or name
-      if ep and not extras_awarded[main] then
-        if EPGP:IsMemberInExtrasList(name) then
-          extras_awarded[EPGP:IncEPBy(name, extras_reason, extras_amount, true)] = true
-        end
-      end
-    end
+  if UnitInRaid("player") then 
+    EPGP:IncMassEPByAndStandings(amount)
   end
 
-  if next(extras_awarded) then
-    callbacks:Fire("MassEPAward", awarded, reason, amount, extras_awarded, extras_reason, extras_amount)
-  end
 
+  db.profile.selected = {}
+  db.profile.selectedcount = 0
+  db.profile.raidStartEP = 0
   db.profile.epcounter = 0
-  db.profile.extraepcounter = 0
   db.profile.gpcounter = 0
-  
+  db.profile.standbyList = {}
+  DestroyStandings()
 end
 
 function EPGP:ShowRaid()
@@ -1123,8 +1164,8 @@ function EPGP:ShowRaid()
   end
   
   message(
+    "Start EP: "..db.profile.raidStartEP.." "..
     "EP per unit: "..db.profile.epcounter.."\n"..
-    "Extra EP per unit: "..db.profile.extraepcounter.."\n"..
     "GP per raid: "..db.profile.gpcounter.."\n"..
     "Units: "..guildcount.."\n"..
     "GP x "..multiplier.."\n"
