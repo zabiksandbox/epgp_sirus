@@ -155,13 +155,7 @@ function EPGP:ProcessCommand(str)
   elseif command == "show" then
     self:ShowRaid()
   elseif command == "test" then
-    local name = self:GetArgs(str, 1, nextpos)
-    self:DeSelectMember(name);
-    if UnitIsConnected(name) then 
-      print("Online");
-    else 
-      print("Offline");
-    end
+    self:Test()
   else
     EPGP:ToggleUI()
   end

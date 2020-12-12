@@ -741,7 +741,7 @@ function EPGP:IncEPBy(name, reason, amount, mass, undo)
 end
 
 function EPGP:CanIncGPBy(reason, amount)
-  amount = amounts * 1 --фиксим дефолдтные баги. хуй кто заметил его ранее.
+  amount = amount * 1 --фиксим дефолдтные баги. хуй кто заметил его ранее.
 
   if not CanEditOfficerNote() or not GS:IsCurrentState() then
     return false
@@ -784,7 +784,7 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
   if  global_config.soc_rate > 0 then
     if reason ~= "fail" then
       if UnitInRaid(name) then
-        _, amount = AddEPGP(main or name, epamount, amount)
+        _, amount = AddEPGP(main or name, 0, amount)
       else
         _, amount = AddEPGP(main or name, 0, amount)  -- не в рейде за шмот
       end 
@@ -876,8 +876,6 @@ function EPGP:IncMassEPBy(reason, amount)
   local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
   local extras_reason = reason
 
-  db.profile.epcounter = db.profile.epcounter + amount
-
   for i=1,EPGP:GetNumMembers() do
     local name = EPGP:GetMember(i)
     if EPGP:IsMemberInAwardList(name) then
@@ -891,8 +889,7 @@ function EPGP:IncMassEPBy(reason, amount)
       local main = main or name
       if ep and not awarded[main] and not extras_awarded[main] then
         if EPGP:IsMemberInExtrasList(name) then
-          extras_awarded[EPGP:IncEPBy(name, extras_reason,
-                                      extras_amount, true)] = true
+          extras_awarded[EPGP:IncEPBy(name, extras_reason,extras_amount, true)] = true
         else
           awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
         end
@@ -910,11 +907,20 @@ function EPGP:IncMassEPBy(reason, amount)
 end
 
 function EPGP:IncMassEPByAndStandings(amount)
+  amount = amount * 1
   local reason = "RO"
   local awarded = {}
   local extras_awarded = {}
   local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
   local extras_reason = "Standing is over"
+
+
+  local numTotal = GetNumGuildMembers();
+  local onlineUnit = {}
+  for i=1, numTotal do 
+    local name, rank, rankIndex, level, class, zone, note, officernote, online, status, classFileName, achievementPoints, achievementRank = GetGuildRosterInfo(i);
+    onlineUnit[name] = true 
+  end
 
   db.profile.epcounter = db.profile.epcounter + amount
 
@@ -925,12 +931,17 @@ function EPGP:IncMassEPByAndStandings(amount)
       local main = main or name
       if ep and not awarded[main] and not extras_awarded[main] then
 
-        if UnitIsConnected(name) then -- только если поц в онлайне
+        if onlineUnit[name] then -- только если поц в онлайне
           if EPGP:IsMemberInExtrasList(name) then
+            
             extras_amount = extras_amount + db.profile.standbyList[name] -- выдаем за РО + старые значения
-            extras_awarded[EPGP:IncEPBy(name, extras_reason, extras_amount, true)] = true
+            if extras_amount > 0 then             
+              extras_awarded[EPGP:IncEPBy(name, extras_reason, extras_amount, true)] = true  
+            end
           else
-            awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
+            if amount > 0 then
+              awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
+            end
           end
         end
 
@@ -950,12 +961,13 @@ end
 function EPGP:IncRaidEPBy(reason, amount)
   local awarded = {}
   local extras_amount = math.floor(global_config.extras_l * 0.01 * amount)
+  local extras_awarded = {}
 
   db.profile.epcounter = db.profile.epcounter + amount
 
-  for i=1,EPGP:GetNumMembersInAwardList() do
+  for i=1,EPGP:GetNumMembers() do
     local name = EPGP:GetMember(i)
-    if UnitInRaid(name) then
+    if EPGP:IsMemberInAwardList(name) then
       -- EPGP:GetMain() will return the input name if it doesn't find a main,
       -- so we can't use it to validate that this actually is a character who
       -- can recieve EP.
@@ -964,7 +976,7 @@ function EPGP:IncRaidEPBy(reason, amount)
       -- valid member based on the name however.
       local ep, gp, main = EPGP:GetEPGP(name)
       local main = main or name
-      if ep and not awarded[main] then
+      if ep and not awarded[main] and not extras_awarded[main] then
         if EPGP:IsMemberInExtrasList(name) then
           if db.profile.standbyList[name] == nil then -- первый разлут или ноывй ожидающий - обнуляем.
             db.profile.standbyList[name] = 0;
@@ -1065,7 +1077,6 @@ function EPGP:RAID_ROSTER_UPDATE()
         db.profile.selected[name] = nil
         db.profile.selectedcount = db.profile.selectedcount - 1
         EPGP:IncEPBy(name, extras_reason, extras_amount) -- выдали чуваку его накопленый ЕП за ожидание zab
-
       end
     end
   else
@@ -1139,7 +1150,7 @@ function EPGP:SubmitExtras(amount)
   end
 
   if UnitInRaid("player") then 
-    EPGP:IncMassEPByAndStandings(amount)
+      EPGP:IncMassEPByAndStandings(amount)
   end
 
 
@@ -1152,6 +1163,9 @@ function EPGP:SubmitExtras(amount)
   DestroyStandings()
 end
 
+function EPGP:Test()
+
+end
 function EPGP:ShowRaid()
 
   local guildcount = EPGP:GetGuildInRaid()
