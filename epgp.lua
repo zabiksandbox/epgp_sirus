@@ -1052,8 +1052,8 @@ end
 
 function EPGP:StartRaid(amount)
 
-  db.profile.epcounter = 0;
-  db.profile.extraepcounter = 0;
+  db.profile.epcounter = 0
+  db.profile.extraepcounter = 0
   db.profile.gpcounter = 0
   if amount ~= nil then
     if UnitInRaid("player") then 
@@ -1115,9 +1115,9 @@ function EPGP:ShowRaid()
   end
   
   message(
-    "EP by unit: "..db.profile.epcounter.."\n"..
-    "Extra EP by unit: "..db.profile.extraepcounter.."\n"..
-    "GP for all: "..db.profile.gpcounter.."\n"..
+    "EP per unit: "..db.profile.epcounter.."\n"..
+    "Extra EP per unit: "..db.profile.extraepcounter.."\n"..
+    "GP per raid: "..db.profile.gpcounter.."\n"..
     "Units: "..guildcount.."\n"..
     "GP x "..multiplier.."\n"
     )
