@@ -154,6 +154,9 @@ local modulePrototype = {
                    self:Disable()
                  end
                  self.db.profile.enabled = v
+                 self.db.profile.epcounter = 0
+                 self.db.profile.extraepcounter = 0
+                 self.db.profile.gpcounter = 0
                end,
   GetDBVar = function (self, i) return self.db.profile[i[#i]] end,
   SetDBVar = function (self, i, v) self.db.profile[i[#i]] = v end,
@@ -182,9 +185,6 @@ local db
 local standings = {}
 local selected = {}
 selected._count = 0  -- This is safe since _ is not allowed in names
-
-EPGP.epcounter = 0;
-EPGP.gpcounter = 0;
 
 local function DecodeNote(note)
   if note then
@@ -780,8 +780,7 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
     _, amount = AddEPGP(main or name, 0, amount) --дефолт
   end
 
-  EPGP.epcounter = EPGP.epcounter + epamount
-  EPGP.gpcounter = EPGP.gpcounter + amount
+  db.profile.gpcounter = db.profile.gpcounter + amount
 
   if amount then
     callbacks:Fire("GPAward", name, reason, amount, mass, undo)
@@ -893,6 +892,9 @@ function EPGP:IncRaidEPBy(reason, amount)
   local extras_awarded = {}
   local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
   local extras_reason = reason
+
+  db.profile.epcounter = db.profile.epcounter + amount
+  db.profile.extraepcounter = db.profile.extraepcounter + extras_amount
 
   for i=1,EPGP:GetNumMembersInAwardList() do
     local name = EPGP:GetMember(i)
@@ -1044,8 +1046,9 @@ function EPGP:GUILD_ROSTER_UPDATE()
 end
 
 function EPGP:StartRaid()
-  EPGP.epcounter = 0
-  EPGP.gpcounter = 0
+  db.profile.epcounter = 0
+  db.profile.extraepcounter = 0
+  db.profile.gpcounter = 0
   print("EPGP counter = 0");
 end
 
@@ -1059,13 +1062,16 @@ function EPGP:ShowRaid()
   end
   
   message(
-    "EP: "..EPGP.epcounter.."\n"..
-    "GP: "..EPGP.gpcounter.."\n"..
+    "EP by unit: "..db.profile.epcounter.."\n"..
+    "Extra EP by unit: "..db.profile.extraepcounter.."\n"..
+    "GP for all: "..db.profile.gpcounter.."\n"..
     "Units: "..guildcount.."\n"..
-    "Multiplier: "..multiplier.."\n"
+    "GP x "..multiplier.."\n"
     )
+end
 
-  print("EP: "..EPGP.epcounter.."\nGP: "..EPGP.gpcounter.."\nUnits: "..guildcount.."\nMultiplier: "..multiplier.."\n")
+function EPGP:SubmitExtras()
+  print("Extras submited");
 end
 
 function EPGP:OnEnable()
