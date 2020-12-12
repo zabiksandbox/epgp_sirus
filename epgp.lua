@@ -919,7 +919,9 @@ function EPGP:IncMassEPByAndStandings(amount)
   local onlineUnit = {}
   for i=1, numTotal do 
     local name, rank, rankIndex, level, class, zone, note, officernote, online, status, classFileName, achievementPoints, achievementRank = GetGuildRosterInfo(i);
-    onlineUnit[name] = true 
+    local main = GetMain(name);
+    local main = main or name
+    onlineUnit[main] = true 
   end
 
   db.profile.epcounter = db.profile.epcounter + amount
@@ -931,7 +933,7 @@ function EPGP:IncMassEPByAndStandings(amount)
       local main = main or name
       if ep and not awarded[main] and not extras_awarded[main] then
 
-        if onlineUnit[name] then -- только если поц в онлайне
+        if onlineUnit[main] then -- только если поц в онлайне
           if EPGP:IsMemberInExtrasList(name) then
             
             extras_amount = extras_amount + db.profile.standbyList[name] -- выдаем за РО + старые значения
