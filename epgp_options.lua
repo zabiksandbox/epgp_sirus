@@ -142,6 +142,8 @@ function EPGP:ProcessCommand(str)
     EPGP:Print(table.concat(help, "\n"))
   elseif command == "start" then
     self:StartRaid()
+  elseif command == "stop" then
+    self:SubmitExtras()
   elseif command == "show" then
     self:ShowRaid()
   else

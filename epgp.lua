@@ -908,10 +908,6 @@ function EPGP:IncRaidEPBy(reason, amount)
       local ep, gp, main = EPGP:GetEPGP(name)
       local main = main or name
       if ep and not awarded[main] and not extras_awarded[main] then
-        if EPGP:IsMemberInExtrasList(name) then
-          extras_awarded[EPGP:IncEPBy(name, extras_reason,
-                                      extras_amount, true)] = true
-        end
         if EPGP:IsMemberInAwardList(name) then
           awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
         end
@@ -1071,9 +1067,32 @@ function EPGP:ShowRaid()
 end
 
 function EPGP:SubmitExtras()
-  print("Extras submited");
-end
+  local extras_awarded = {}
+  local extras_amount = db.profile.extraepcounter
+  local extras_reason = 'standby';
 
+  local awarded = {};
+  local amount = db.profile.epcounter
+  local reason = 'standby';
+  
+
+  for i=1,EPGP:GetNumMembersInAwardList() do
+    local name = EPGP:GetMember(i)
+    if UnitInRaid(name) then
+      local ep, gp, main = EPGP:GetEPGP(name)
+      local main = main or name
+      if ep and not extras_awarded[main] then
+        if EPGP:IsMemberInExtrasList(name) then
+          extras_awarded[EPGP:IncEPBy(name, extras_reason, extras_amount, true)] = true
+        end
+      end
+    end
+  end
+
+  if next(extras_awarded) then
+    callbacks:Fire("MassEPAward", awarded, reason, amount, extras_awarded, extras_reason, extras_amount)
+  end
+end
 function EPGP:OnEnable()
   GS.RegisterCallback(self, "GuildInfoChanged", ParseGuildInfo)
   GS.RegisterCallback(self, "GuildNoteChanged", ParseGuildNote)
