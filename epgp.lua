@@ -1092,6 +1092,11 @@ function EPGP:SubmitExtras()
   if next(extras_awarded) then
     callbacks:Fire("MassEPAward", awarded, reason, amount, extras_awarded, extras_reason, extras_amount)
   end
+
+  db.profile.epcounter = 0
+  db.profile.extraepcounter = 0
+  db.profile.gpcounter = 0
+  
 end
 function EPGP:OnEnable()
   GS.RegisterCallback(self, "GuildInfoChanged", ParseGuildInfo)
