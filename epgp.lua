@@ -780,7 +780,7 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
     _, amount = AddEPGP(main or name, 0, amount) --дефолт
   end
 
-  db.profile.gpcounter = db.profile.gpcounter + amount
+  
 
   if amount then
     callbacks:Fire("GPAward", name, reason, amount, mass, undo)
@@ -789,6 +789,7 @@ function EPGP:IncGPBy(name, reason, amount, mass, undo)
       if reason ~= "fail" then
         if UnitInRaid(name) then
           EPGP:IncRaidEPBy(reason, epamount);
+          db.profile.gpcounter = db.profile.gpcounter + amount
         end
       end
     end
@@ -855,6 +856,9 @@ function EPGP:IncMassEPBy(reason, amount)
   local extras_awarded = {}
   local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
   local extras_reason = reason
+
+  db.profile.epcounter = db.profile.epcounter + amount
+  db.profile.extraepcounter = db.profile.extraepcounter + amount
 
   for i=1,EPGP:GetNumMembers() do
     local name = EPGP:GetMember(i)
