@@ -591,8 +591,6 @@ function EPGP:DeSelectMember(name)
   if not db.profile.selected[name] then
     return false
   end
-  db.profile.standbyList[name] = nil
-  db.profile.selected[name] = nil
   db.profile.selected[name] = nil
   db.profile.selectedcount = db.profile.selectedcount - 1
   DestroyStandings()
