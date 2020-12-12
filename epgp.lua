@@ -991,11 +991,19 @@ function EPGP:OnInitialize()
 end
 
 function EPGP:RAID_ROSTER_UPDATE()
+  local extras_amount = db.profile.extraepcounter
+  local extras_reason = 'standby';
+
   if UnitInRaid("player") then
     -- If we are in a raid, make sure no member of the raid is
     -- selected
     for name,_ in pairs(selected) do
       if UnitInRaid(name) then
+
+        -- По идее, этот кусок вызовится, когда юзер переходит из листа ожидающий в рейд, т.е. при инвайте.
+        -- Следовательно, здесь мы должны выдать ему все еп за ожидание, и удалить из листа. Далее он будет получать еп после каждого разлута как обычный юзверь.
+        EPGP:IncEPBy(name, extras_reason, extras_amount)
+
         selected[name] = nil
         selected._count = selected._count - 1
       end
