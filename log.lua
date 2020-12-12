@@ -214,8 +214,11 @@ function mod:Export()
   d.realm = GetRealmName()
   d.base_gp = EPGP:GetBaseGP()
   d.min_ep = EPGP:GetMinEP()
+  d.max_ep = EPGP:GetMaxEP()
   d.decay_p = EPGP:GetDecayPercent()
   d.extras_p = EPGP:GetExtrasPercent()
+  d.extras_l = EPGP:GetExtrasPercentL()
+  d.soc_rate = EPGP:GetSocialRate()
   d.timestamp = GetTimestamp()
 
   d.roster = EPGP:ExportRoster()
@@ -257,7 +260,10 @@ function mod:Import(jsonStr)
     roster = "table",
     decay_p = "number",
     extras_p = "number",
+    extras_l = "number",
     min_ep = "number",
+    max_ep = "number",
+    soc_rate = "number",
     base_gp = "number",
   }
   for k,t in pairs(types) do
@@ -288,7 +294,7 @@ function mod:Import(jsonStr)
 
   EPGP:Print(L["Importing data snapshot taken at: %s"]:format(
                date("%Y-%m-%d %H:%M", d.timestamp)))
-  EPGP:SetGlobalConfiguration(d.decay_p, d.extras_p, d.base_gp, d.min_ep)
+  EPGP:SetGlobalConfiguration(d.decay_p, d.extras_p, d.base_gp, d.min_ep, d.max_ep, d.soc_rate, d.extras_l)
   EPGP:ImportRoster(d.roster, d.base_gp)
 
   -- Trim the log if necessary.
