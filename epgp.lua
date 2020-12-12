@@ -342,6 +342,14 @@ local global_config_defs = {
     default = 100,
     change_message = "ExtrasPercentChanged",
   },
+  extras_l = {
+    pattern = "@EXTRAS_L:(%d+)",
+    parser = tonumber,
+    validator = function(v) return v >= 0 and v <= 100 end,
+    error = L["Extras Percent should be a number between 0 and 100"],
+    default = 100,
+    change_message = "ExtrasPercentChanged",
+  },
   min_ep = {
     pattern = "@MIN_EP:(%d+)",
     parser = tonumber,
@@ -809,6 +817,9 @@ end
 function EPGP:GetExtrasPercent()
   return global_config.extras_p
 end
+function EPGP:GetExtrasPercentL()
+  return global_config.extras_l
+end
 
 function EPGP:GetBaseGP()
   return global_config.base_gp
@@ -824,12 +835,13 @@ function EPGP:GetSocialRate()
   return global_config.soc_rate
 end
 
-function EPGP:SetGlobalConfiguration(decay_p, extras_p, base_gp, min_ep, max_ep, soc_rate)
+function EPGP:SetGlobalConfiguration(decay_p, extras_p, base_gp, min_ep, max_ep, soc_rate, extras_l)
   local guild_info = GS:GetGuildInfo()
   epgp_stanza = string.format(
-    "-EPGP-\n@DECAY_P:%d\n@EXTRAS_P:%s\n@MIN_EP:%d\n@MAX_EP:%d\n@BASE_GP:%d\n@SOC_RATE:%d\n-EPGP-",
+    "-EPGP-\n@DECAY_P:%d\n@EXTRAS_P:%s\n@MIN_EP:%d\n@MAX_EP:%d\n@BASE_GP:%d\n@SOC_RATE:%d@EXTRAS_L:%d\n\n-EPGP-",
     decay_p or DEFAULT_DECAY_P,
     extras_p or DEFAULT_EXTRAS_P,
+    extras_l or DEFAULT_EXTRAS_L,
     min_ep or DEFAULT_MIN_EP,
     max_ep or DEFAULT_MAX_EP,
     soc_rate or DEFAULT_SOC_RATE,
@@ -858,7 +870,7 @@ function EPGP:IncMassEPBy(reason, amount)
   local extras_reason = reason
 
   db.profile.epcounter = db.profile.epcounter + amount
-  db.profile.extraepcounter = db.profile.extraepcounter + amount
+  db.profile.extraepcounter = db.profile.extraepcounter + extras_amount
 
   for i=1,EPGP:GetNumMembers() do
     local name = EPGP:GetMember(i)
@@ -893,9 +905,7 @@ end
 
 function EPGP:IncRaidEPBy(reason, amount)
   local awarded = {}
-  local extras_awarded = {}
-  local extras_amount = math.floor(global_config.extras_p * 0.01 * amount)
-  local extras_reason = reason
+  local extras_amount = math.floor(global_config.extras_l * 0.01 * amount)
 
   db.profile.epcounter = db.profile.epcounter + amount
   db.profile.extraepcounter = db.profile.extraepcounter + extras_amount
@@ -911,7 +921,7 @@ function EPGP:IncRaidEPBy(reason, amount)
       -- valid member based on the name however.
       local ep, gp, main = EPGP:GetEPGP(name)
       local main = main or name
-      if ep and not awarded[main] and not extras_awarded[main] then
+      if ep and not awarded[main] then
         if EPGP:IsMemberInAwardList(name) then
           awarded[EPGP:IncEPBy(name, reason, amount, true)] = true
         end
@@ -919,12 +929,7 @@ function EPGP:IncRaidEPBy(reason, amount)
     end
   end
   if next(awarded) then
-    if next(extras_awarded) then
-      callbacks:Fire("MassEPAward", awarded, reason, amount,
-                     extras_awarded, extras_reason, extras_amount)
-    else
       callbacks:Fire("MassEPAward", awarded, reason, amount)
-    end
   end
 end
 
@@ -1045,32 +1050,29 @@ function EPGP:GUILD_ROSTER_UPDATE()
   end
 end
 
-function EPGP:StartRaid()
-  db.profile.epcounter = 0
-  db.profile.extraepcounter = 0
+function EPGP:StartRaid(amount)
+
+  db.profile.epcounter = 0;
+  db.profile.extraepcounter = 0;
   db.profile.gpcounter = 0
-  print("EPGP counter = 0");
-end
-
-function EPGP:ShowRaid()
-
-  local guildcount = EPGP:GetGuildInRaid()
-  local multiplier = (guildcount / 100)
-
-  if multiplier < (global_config.soc_rate / 100) then
-    multiplier = (global_config.soc_rate / 100)
+  if amount ~= nil then
+    if UnitInRaid("player") then 
+      EPGP:IncMassEPBy("Start RT", amount)
+    end
   end
-  
-  message(
-    "EP by unit: "..db.profile.epcounter.."\n"..
-    "Extra EP by unit: "..db.profile.extraepcounter.."\n"..
-    "GP for all: "..db.profile.gpcounter.."\n"..
-    "Units: "..guildcount.."\n"..
-    "GP x "..multiplier.."\n"
-    )
+
 end
 
-function EPGP:SubmitExtras()
+
+
+function EPGP:SubmitExtras(amount)
+
+  if amount ~= nil then
+    if UnitInRaid("player") then 
+      EPGP:IncMassEPBy("RO", amount)
+    end
+  end
+
   local extras_awarded = {}
   local extras_amount = db.profile.extraepcounter
   local extras_reason = 'standby';
@@ -1102,6 +1104,25 @@ function EPGP:SubmitExtras()
   db.profile.gpcounter = 0
   
 end
+
+function EPGP:ShowRaid()
+
+  local guildcount = EPGP:GetGuildInRaid()
+  local multiplier = (guildcount / 100)
+
+  if multiplier < (global_config.soc_rate / 100) then
+    multiplier = (global_config.soc_rate / 100)
+  end
+  
+  message(
+    "EP by unit: "..db.profile.epcounter.."\n"..
+    "Extra EP by unit: "..db.profile.extraepcounter.."\n"..
+    "GP for all: "..db.profile.gpcounter.."\n"..
+    "Units: "..guildcount.."\n"..
+    "GP x "..multiplier.."\n"
+    )
+end
+
 function EPGP:OnEnable()
   GS.RegisterCallback(self, "GuildInfoChanged", ParseGuildInfo)
   GS.RegisterCallback(self, "GuildNoteChanged", ParseGuildNote)
