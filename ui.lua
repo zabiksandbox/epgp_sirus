@@ -4,12 +4,48 @@ local mod = EPGP:NewModule("ui")
 local L = LibStub("AceLocale-3.0"):GetLocale("EPGP")
 local GS = LibStub("LibGuildStorage-1.0")
 local GP = LibStub("LibGearPoints-1.0")
+local AceGUI = LibStub("AceGUI-3.0")
 
 local EPGPWEB = "http://www.epgpweb.com"
 
 local BUTTON_TEXT_PADDING = 20
 local BUTTON_HEIGHT = 22
 local ROW_TEXT_PADDING = 5
+local calendar = {}
+
+local function EPGPCalendarDropDown(dropDown)
+  local parent = dropDown:GetParent()
+  
+  local weekday, month, day, year = CalendarGetDate();
+  local numEvents = CalendarGetNumDayEvents(0, day)
+  for i=1,numEvents do
+    local title, hour, minute, calendarType, sequenceType, eventType, texture, modStatus, inviteStatus, invitedBy, difficulty, inviteType, sequenceIndex, numSequenceDayss, wat = CalendarGetDayEvent(0, day, i);
+    if modStatus == "CREATOR" then
+      local info = UIDropDownMenu_CreateInfo()
+
+        info.text = title.." - "..hour..":"..minute..""
+        info.func = function(self)
+                      UIDropDownMenu_SetSelectedID(dropDown, self:GetID())
+                    end
+        UIDropDownMenu_AddButton(info)
+      end
+    end
+  end
+
+local function pairsByKeys(t, f)
+   local a = {}
+   for n in pairs(t) do table.insert(a, n) end
+   table.sort(a, f)
+   local i = 0      -- iterator variable
+   local iter = function ()   -- iterator function
+      i = i + 1
+      if a[i] == nil then return nil
+      else return a[i], t[a[i]]
+      end
+   end
+   return iter
+end
+
 
 local function Debug(fmt, ...)
   DEFAULT_CHAT_FRAME:AddMessage(string.format(fmt, ...))
@@ -49,56 +85,45 @@ local function CreateEPGPFrame()
   f:SetToplevel(true)
   f:EnableMouse(true)
   f:SetMovable(true)
+
+  f:SetFrameStrata('DIALOG')
+  f:SetClampedToScreen(true)
+
   f:SetAttribute("UIPanelLayout-defined", true)
   f:SetAttribute("UIPanelLayout-enabled", true)
   f:SetAttribute("UIPanelLayout-area", "left")
   f:SetAttribute("UIPanelLayout-pushable", 5)
   f:SetAttribute("UIPanelLayout-whileDead", true)
 
-  f:SetWidth(384)
+  f:SetWidth(830)
   f:SetHeight(512)
-  f:SetPoint("TOPLEFT", nil, "TOPLEFT", 0, -104)
+  f:SetPoint('TOP', 0, -50)
   f:SetHitRectInsets(0, 30, 0, 45)
 
-  local t = f:CreateTexture(nil, "BACKGROUND")
-  t:SetTexture("Interface\\PetitionFrame\\GuildCharter-Icon")
-  t:SetWidth(60)
-  t:SetHeight(60)
-  t:SetPoint("TOPLEFT", f, "TOPLEFT", 7, -6)
+  f:SetBackdrop{
+      bgFile='Interface\\DialogFrame\\UI-DialogBox-Background' ,
+      edgeFile='Interface\\DialogFrame\\UI-DialogBox-Border',
+      tile = true,
+      insets = {left = 11, right = 12, top = 12, bottom = 11},
+      tileSize = 32,
+      edgeSize = 32,
+    }   
 
-  t = f:CreateTexture(nil, "ARTWORK")
-  t:SetTexture("Interface\\ClassTrainerFrame\\UI-ClassTrainer-TopLeft")
-  t:SetWidth(256)
-  t:SetHeight(256)
-  t:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+  local tr = f:CreateTitleRegion()
+  tr:SetAllPoints(f)
 
-  t = f:CreateTexture(nil, "ARTWORK")
-  t:SetTexture("Interface\\ClassTrainerFrame\\UI-ClassTrainer-TopRight")
-  t:SetWidth(128)
-  t:SetHeight(256)
-  t:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+  local header = f:CreateTexture(nil, 'ARTWORK')
+  header:SetTexture('Interface\\DialogFrame\\UI-DialogBox-Header')
+  header:SetWidth(256); header:SetHeight(64)
+  header:SetPoint('TOP', 0, 12)
 
-  t = f:CreateTexture(nil, "ARTWORK")
-  t:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-General-BottomLeft")
-  t:SetWidth(256)
-  t:SetHeight(256)
-  t:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 0, 0)
-
-  t = f:CreateTexture(nil, "ARTWORK")
-  t:SetTexture(
-    "Interface\\PaperDollInfoFrame\\UI-Character-General-BottomRight")
-  t:SetWidth(128)
-  t:SetHeight(256)
-  t:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
-
-  t = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  t:SetWidth(250)
-  t:SetHeight(16)
-  t:SetPoint("TOP", f, "TOP", 3, -16)
-  t:SetText("EPGP "..EPGP.version)
+  local title = f:CreateFontString('ARTWORK')
+  title:SetFontObject('GameFontNormal')
+  title:SetPoint('TOP', header, 'TOP', 0, -14)
+  title:SetText("EPGP "..EPGP.version) 
 
   local cb = CreateFrame("Button", nil, f, "UIPanelCloseButton")
-  cb:SetPoint("TOPRIGHT", f, "TOPRIGHT", -30, -8)
+  cb:SetPoint("TOPRIGHT", f, "TOPRIGHT", 8, 8)
 
   f:SetScript("OnHide", ToggleOnlySideFrame)
 end
@@ -1119,9 +1144,75 @@ local function CreateEPGPFrameStandings()
 
   -- Make the main frame
   local main = CreateFrame("Frame", nil, EPGPFrame)
-  main:SetWidth(325)
-  main:SetHeight(358)
-  main:SetPoint("TOPLEFT", EPGPFrame, 19, -72)
+  main:SetWidth(380)
+  main:SetHeight(470)
+  main:SetPoint("TOPLEFT", EPGPFrame, 25, -25)
+  main:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    tile = true,
+    tileSize = 16,
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    edgeSize = 16,
+    insets = {left = 5, right = 3, top = 3, bottom = 5}
+  })
+  main:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
+  main:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+
+
+
+  local raidTab = CreateFrame("Frame", nil, EPGPFrame)
+  raidTab:SetWidth(380)
+  raidTab:SetHeight(470)
+  raidTab:SetPoint("TOPRIGHT", EPGPFrame, -25, -25)
+  raidTab:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    tile = true,
+    tileSize = 16,
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    edgeSize = 16,
+    insets = {left = 5, right = 3, top = 3, bottom = 5}
+  })
+  raidTab:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
+  raidTab:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+
+  local desc = raidTab:CreateFontString('ARTWORK')
+    desc:SetFontObject('GameFontHighlight')
+    desc:SetJustifyV('TOP')
+    desc:SetJustifyH('CENTER')
+    desc:SetPoint('TOPLEFT', 0, -35)
+    desc:SetPoint('TOPRIGHT', 0, 0)
+    desc:SetText("Select raid, set award and press start button") 
+
+  local raidStartFrame = CreateFrame("Frame", nil, raidTab)
+  raidStartFrame:SetPoint("TOPLEFT",  raidTab, 0, -80)
+  raidStartFrame:SetPoint("TOPRIGHT", raidTab, 0, -80)
+  raidStartFrame:SetWidth(100);
+  raidStartFrame:SetHeight(100);
+
+  raidStartFrame:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
+  raidStartFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+
+  local dropDown = CreateFrame("Frame", "$parentEPControlDropDown", raidStartFrame, "UIDropDownMenuTemplate")
+  dropDown:EnableMouse(true)
+  UIDropDownMenu_Initialize(dropDown, EPGPCalendarDropDown)
+  UIDropDownMenu_SetWidth(dropDown, 150)
+  UIDropDownMenu_JustifyText(dropDown, "LEFT")
+  dropDown:SetPoint("TOPLEFT", raidStartFrame, "BOTTOMLEFT")
+
+  local startButton = CreateFrame("Button", nil, main, "UIPanelButtonTemplate")
+  startButton:SetNormalFontObject("GameFontNormalLarge")
+  startButton:SetHighlightFontObject("GameFontNormalLarge")
+  startButton:SetDisabledFontObject("GameFontNormalLarge")
+  startButton:SetHeight(32)
+  startButton:SetPoint("TOPLEFT", raidStartFrame, 200, 0)
+  startButton:SetText("Start")
+  startButton:SetWidth(startButton:GetTextWidth() + BUTTON_TEXT_PADDING)
+  startButton:RegisterEvent("RAID_ROSTER_UPDATE")
+  startButton:SetScript(
+    "OnClick",
+    function()
+      --ToggleOnlySideFrame(EPGPSideFrame2)
+    end)
 
   local award = CreateFrame("Button", nil, main, "UIPanelButtonTemplate")
   award:SetNormalFontObject("GameFontNormalSmall")
@@ -1244,8 +1335,8 @@ local function CreateEPGPFrameStandings()
 
   -- Make the table frame
   local tabl = CreateFrame("Frame", nil, main)
-  tabl:SetPoint("TOPLEFT")
-  tabl:SetPoint("TOPRIGHT")
+  tabl:SetPoint("TOPLEFT", 3, -5)
+  tabl:SetPoint("TOPRIGHT", -5, -5)
   tabl:SetPoint("BOTTOM", modeText, "TOP")
   -- Also hook the status texts to update on show
   tabl:SetScript(
@@ -1258,7 +1349,7 @@ local function CreateEPGPFrameStandings()
   -- Populate the table
   CreateTable(tabl,
               {"Name", "EP", "GP", "PR"},
-              {0, 64, 64, 64},
+              {0, 60, 60, 60},
               {"LEFT", "RIGHT", "RIGHT", "RIGHT"},
               27)  -- The scrollBarWidth
 

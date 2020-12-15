@@ -161,7 +161,7 @@ local modulePrototype = {
                  self.db.profile.selected = {}
                  self.db.profile.selectedcount = 0
                  self.db.profile.raidStartEP = 0 -- стартовые ЕП реейда.
-                 self.db.profile.standings = {}
+                 self.db.profile.detectedRaidLookups = {}
                end,
   GetDBVar = function (self, i) return self.db.profile[i[#i]] end,
   SetDBVar = function (self, i, v) self.db.profile[i[#i]] = v end,
@@ -187,6 +187,7 @@ local main_data = {}
 local alt_data = {}
 local ignored = {}
 local db
+local standings = {}
 
 local function DecodeNote(note)
   if note then
@@ -287,7 +288,7 @@ for k,f in pairs(comparators) do
 end
 
 local function DestroyStandings()
-  db.profile.standings = {}
+  wipe(standings)
   callbacks:Fire("StandingsChanged")
 end
 
@@ -301,23 +302,23 @@ local function RefreshStandings(order, showEveryone)
     ---  all selected members
     for n in pairs(ep_data) do
       if showEveryone or UnitInRaid(n) or db.profile.selected[n] then
-        table.insert(db.profile.standings, n)
+        table.insert(standings, n)
       end
     end
     for n in pairs(main_data) do
       if UnitInRaid(n) or db.profile.selected[n] then
-        table.insert(db.profile.standings, n)
+        table.insert(standings, n)
       end
     end
   else
     -- If we are not in raid, show all mains
     for n in pairs(ep_data) do
-      table.insert(db.profile.standings, n)
+      table.insert(standings, n)
     end
   end
 
   -- Sort
-  table.sort(db.profile.standings, comparators[order])
+  table.sort(standings, comparators[order])
 end
 
 -- Parse options. Options are inside GuildInfo and are inside a -EPGP-
@@ -539,19 +540,19 @@ function EPGP:StandingsShowEveryone(val)
 end
 
 function EPGP:GetNumMembers()
-  if #db.profile.standings == 0 then
+  if #standings == 0 then
     RefreshStandings(db.profile.sort_order, db.profile.show_everyone)
   end
 
-  return #db.profile.standings
+  return #standings
 end
 
 function EPGP:GetMember(i)
-  if #db.profile.standings == 0 then
+  if #standings == 0 then
     RefreshStandings(db.profile.sort_order, db.profile.show_everyone)
   end
 
-  return db.profile.standings[i]
+  return standings[i]
 end
 
 function EPGP:GetNumAlts(name)
@@ -1020,7 +1021,8 @@ function EPGP:OnInitialize()
       raidStartEP = 0,
       standbyList = {},
       selected = {},
-      selectedcount = 0
+      selectedcount = 0,
+      detectedRaidLookups = {}
     }
   }
   db:RegisterDefaults(defaults)
