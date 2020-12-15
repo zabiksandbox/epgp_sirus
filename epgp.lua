@@ -907,6 +907,44 @@ function EPGP:IncMassEPBy(reason, amount)
   end
 end
 
+
+function EPGP:CalcItemLevel (unitid)
+
+    local two_hand = {
+      ["INVTYPE_2HWEAPON"] = true,
+      ["INVTYPE_RANGED"] = true,
+      ["INVTYPE_RANGEDRIGHT"] = true,
+    }
+    --> 16 = all itens including main and off hand
+    local item_amount = 16
+    local item_level = 0
+    local failed = 0
+
+    for equip_id = 1, 17 do
+      if (equip_id ~= 4) then --shirt slot
+        local item = GetInventoryItemLink(unitid, equip_id)
+        if (item) then
+          local _, _, itemRarity, iLevel, _, _, _, _, equipSlot = GetItemInfo (item)
+          if (iLevel) then
+            item_level = item_level + iLevel
+
+            --> 16 = main hand 17 = off hand
+            -->  if using a two-hand, ignore the off hand slot
+            --if (equip_id == 16 and two_hand [equipSlot]) then
+            --  item_amount = 15
+            --  break
+            --end
+          end
+        else
+        end
+      end
+    end
+
+    local average = item_level / item_amount
+    --print (UnitName (unitid), "ILVL:", average, unitid, "items:", item_amount)
+
+    return average
+end
 function EPGP:IncMassEPByAndStandings(amount)
   amount = amount * 1
   local reason = "RO"
@@ -1168,6 +1206,9 @@ function EPGP:SubmitExtras(amount)
 end
 
 function EPGP:Test()
+  local overall, equipped = GetAverageItemLevel("player");
+  message(EPGP:CalcItemLevel(UnitName("player")))
+  message(overall..' '..equipped)
 
 end
 function EPGP:ShowRaid()

@@ -12,15 +12,17 @@ local BUTTON_TEXT_PADDING = 20
 local BUTTON_HEIGHT = 22
 local ROW_TEXT_PADDING = 5
 local calendar = {}
-
+local OpenCalendar = OpenCalendar
+OpenCalendar()
 local function EPGPCalendarDropDown(dropDown)
   local parent = dropDown:GetParent()
-  
   local weekday, month, day, year = CalendarGetDate();
+
+  
   local numEvents = CalendarGetNumDayEvents(0, day)
   for i=1,numEvents do
     local title, hour, minute, calendarType, sequenceType, eventType, texture, modStatus, inviteStatus, invitedBy, difficulty, inviteType, sequenceIndex, numSequenceDayss, wat = CalendarGetDayEvent(0, day, i);
-    if modStatus == "CREATOR" then
+    if modStatus == "CREATOR" and calendarType ~= 'RAID_LOCKOUT' and calendarType ~= 'RAID_RESET' then
       local info = UIDropDownMenu_CreateInfo()
 
         info.text = title.." - "..hour..":"..minute..""
@@ -1175,36 +1177,47 @@ local function CreateEPGPFrameStandings()
   raidTab:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
   raidTab:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
 
-  local desc = raidTab:CreateFontString('ARTWORK')
-    desc:SetFontObject('GameFontHighlight')
-    desc:SetJustifyV('TOP')
-    desc:SetJustifyH('CENTER')
-    desc:SetPoint('TOPLEFT', 0, -35)
-    desc:SetPoint('TOPRIGHT', 0, 0)
-    desc:SetText("Select raid, set award and press start button") 
+
 
   local raidStartFrame = CreateFrame("Frame", nil, raidTab)
-  raidStartFrame:SetPoint("TOPLEFT",  raidTab, 0, -80)
-  raidStartFrame:SetPoint("TOPRIGHT", raidTab, 0, -80)
+  raidStartFrame:SetPoint("TOPLEFT",  raidTab, 0, -10)
+  raidStartFrame:SetPoint("TOPRIGHT", raidTab, 0, -10)
   raidStartFrame:SetWidth(100);
   raidStartFrame:SetHeight(100);
 
   raidStartFrame:SetBackdropColor(0.15, 0.15, 0.15, 0.9)
   raidStartFrame:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
 
-  local dropDown = CreateFrame("Frame", "$parentEPControlDropDown", raidStartFrame, "UIDropDownMenuTemplate")
-  dropDown:EnableMouse(true)
-  UIDropDownMenu_Initialize(dropDown, EPGPCalendarDropDown)
-  UIDropDownMenu_SetWidth(dropDown, 150)
-  UIDropDownMenu_JustifyText(dropDown, "LEFT")
-  dropDown:SetPoint("TOPLEFT", raidStartFrame, "BOTTOMLEFT")
+  local desc = raidStartFrame:CreateFontString('ARTWORK')
+  desc:SetFontObject('GameFontHighlight')
+  desc:SetJustifyV('TOP')
+  desc:SetJustifyH('CENTER')
+  desc:SetHeight(80)
+  desc:SetPoint('TOPLEFT', 0, 0)
+  desc:SetPoint('TOPRIGHT', 0, 0)
+  desc:SetText("Здравствуй, "..UnitName("player").."!\nВыбери событие, назначь награду, можешь установить ораничение ilvl для инвайта.\nВсе кто не поместятся в рейд - попадут в список замены")
+
+  local eventLabel =
+  raidStartFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+  eventLabel:SetText("Событие")
+  eventLabel:SetPoint("BOTTOMLEFT", desc, 20, 0)
+
+  local awardLabel =
+  raidStartFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+  awardLabel:SetText("EP")
+  awardLabel:SetPoint("BOTTOMLEFT", desc, 193, 0)
+
+  local ilvlLabel =
+  raidStartFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+  ilvlLabel:SetText("ilvl")
+  ilvlLabel:SetPoint("BOTTOMLEFT", desc, 253, 0)
 
   local startButton = CreateFrame("Button", nil, main, "UIPanelButtonTemplate")
   startButton:SetNormalFontObject("GameFontNormalLarge")
   startButton:SetHighlightFontObject("GameFontNormalLarge")
   startButton:SetDisabledFontObject("GameFontNormalLarge")
   startButton:SetHeight(32)
-  startButton:SetPoint("TOPLEFT", raidStartFrame, 200, 0)
+  startButton:SetPoint("BOTTOMRIGHT", desc, -20, -35)
   startButton:SetText("Start")
   startButton:SetWidth(startButton:GetTextWidth() + BUTTON_TEXT_PADDING)
   startButton:RegisterEvent("RAID_ROSTER_UPDATE")
@@ -1213,6 +1226,32 @@ local function CreateEPGPFrameStandings()
     function()
       --ToggleOnlySideFrame(EPGPSideFrame2)
     end)
+
+
+    local dropDown = CreateFrame("Frame", "$parentEPEventControlDropDown", raidStartFrame, "UIDropDownMenuTemplate")
+  dropDown:EnableMouse(true)
+  UIDropDownMenu_Initialize(dropDown, EPGPCalendarDropDown)
+  UIDropDownMenu_SetWidth(dropDown, 150)
+  UIDropDownMenu_JustifyText(dropDown, "LEFT")
+  dropDown:SetPoint("BOTTOMLEFT", eventLabel, -20, -40)
+
+  local awardValue = CreateFrame("EditBox", "$parentawardValueEditBox", raidStartFrame, "InputBoxTemplate")
+  awardValue:SetFontObject("GameFontHighlightSmall")
+  awardValue:SetHeight(30)
+  awardValue:SetWidth(50)
+  awardValue:SetText(0)
+  awardValue:SetAutoFocus(false)
+  awardValue:SetPoint("BOTTOMLEFT", awardLabel, 0, -35)
+
+
+  local ilvlValue = CreateFrame("EditBox", "$parentilvlValueEditBox", raidStartFrame, "InputBoxTemplate")
+  ilvlValue:SetFontObject("GameFontHighlightSmall")
+  ilvlValue:SetHeight(30)
+  ilvlValue:SetWidth(50)
+  ilvlValue:SetText(0)
+  ilvlValue:SetAutoFocus(false)
+  ilvlValue:SetPoint("BOTTOMLEFT", ilvlLabel, 0, -35)
+  
 
   local award = CreateFrame("Button", nil, main, "UIPanelButtonTemplate")
   award:SetNormalFontObject("GameFontNormalSmall")
@@ -1228,6 +1267,8 @@ local function CreateEPGPFrameStandings()
     function()
       ToggleOnlySideFrame(EPGPSideFrame2)
     end)
+
+
 
   local log = CreateFrame("Button", nil, main, "UIPanelButtonTemplate")
   log:SetNormalFontObject("GameFontNormalSmall")
